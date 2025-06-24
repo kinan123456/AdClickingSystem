@@ -1,4 +1,7 @@
 ﻿using Application.Adapters;
+using Application.Repositories;
+using Application.Services;
+using Domain.Interfaces;
 using Serilog;
 
 internal class Program
@@ -15,7 +18,10 @@ internal class Program
             .CreateLogger();
         Log.Information("MockClient started using DirectAdClient adapter.");
 
-        IAdClient client = new DirectAdClient();
+        // Set up dependencies manually.
+        IAdRepository adRepository = new InMemoryAdRepository(); // IAdRepository is the Database interface. Initiate In-Memory database class.
+        IAdService adService = new AdService(adRepository, Log.Logger); // IAdService is the logic that accesses the database collections.
+        IAdClient adClient = new DirectAdClient(adService, Log.Logger); // Create the adapter instance (DirectAdClient).
 
         string lang = "HE";
         string country = "ISRAEL";
@@ -25,29 +31,33 @@ internal class Program
         {
             try
             {
+                Log.Information("MockClient: Request GetAd with details: Language = {Language}, Country = {Country}, Size = {Size}",
+                    lang, country, size);
+
                 // Get an ad using the adapter.
-                Log.Information("MockClient: GetAdAsync returned AdId: {AdId}, Title: {Title}", 5, 5);
-                await client.GetAdAsync(lang, country, size);
+                var ad = await adClient.GetAdAsync(lang, country, size);
+                Log.Information("MockClient: GetAdAsync returned AdId: {AdId}, Title: {Title}", ad.AdId, ad.Title);
 
                 // Simulate a click with 50% chance.
                 if (RandomGenerator.NextDouble() < 0.5)
                 {
+                    Log.Information("MockClient: ClickAdAsync executed for AdId: {AdId}", ad.AdId);
+                    await adClient.ClickAdAsync(ad.AdId);
+
                     // Simulate a registration with 30% chance.
                     if (RandomGenerator.NextDouble() < 0.3)
                     {
-                        Log.Information("MockClient: RegisterAdAsync executed for AdId: {AdId}", 5);
+                        Log.Information("MockClient: RegisterAdAsync executed for AdId: {AdId}", ad.AdId);
                     }
-                    Log.Information("MockClient: ClickAdAsync executed for AdId: {AdId}", 5);
                 }
-
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "MockClient: Error during ad operations");
             }
 
-            // Wait for a random interval between 2 and 5 seconds.
-            var delayMilliseconds = 10;
+            // Wait for a 10 milliseconds for the next client call.
+            var delayMilliseconds = 1000;
             await Task.Delay(delayMilliseconds);
         }
     }
