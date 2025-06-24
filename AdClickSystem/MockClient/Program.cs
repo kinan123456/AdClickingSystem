@@ -2,6 +2,7 @@
 using Application.Repositories;
 using Application.Services;
 using Domain.Interfaces;
+using MockClient;
 using Serilog;
 
 internal class Program
@@ -12,7 +13,7 @@ internal class Program
     {
         // Configure Serilog.
         Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Debug()
+            .MinimumLevel.Warning()
             .Enrich.FromLogContext()
             .WriteTo.Console()
             .CreateLogger();
@@ -26,6 +27,10 @@ internal class Program
         string lang = "HE";
         string country = "ISRAEL";
         string size = "M";
+        adService.UpdateOptimizedAndRandomAd(lang, country, size);
+
+        BackgroundAdGenerator generator = new BackgroundAdGenerator(adService, Log.Logger);
+        _ = Task.Run(async () => await generator.GenerateDataAsync(lang, country, size));
 
         while (true)
         {
@@ -48,6 +53,7 @@ internal class Program
                     if (RandomGenerator.NextDouble() < 0.3)
                     {
                         Log.Information("MockClient: RegisterAdAsync executed for AdId: {AdId}", ad.AdId);
+                        await adClient.RegisterAdAsync(ad.AdId);
                     }
                 }
             }
@@ -57,7 +63,7 @@ internal class Program
             }
 
             // Wait for a 10 milliseconds for the next client call.
-            var delayMilliseconds = 1000;
+            var delayMilliseconds = 10;
             await Task.Delay(delayMilliseconds);
         }
     }

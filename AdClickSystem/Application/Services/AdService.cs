@@ -1,6 +1,7 @@
 ﻿using Domain.Entities.AdClickSystem.Domain.Entities;
 using Domain.Interfaces;
 using Serilog;
+using System.Collections.Concurrent;
 
 namespace Application.Services
 {
@@ -14,7 +15,10 @@ namespace Application.Services
         private static readonly Random _random = new();
 
         // Cache for optimized ads keyed by "language-country-adSize"
-        private readonly Dictionary<string, Ad> _optimizedAdCache = new();
+        private readonly ConcurrentDictionary<string, Ad> _optimizedAdCache = new();
+
+        // Cache for randomized ads keyed by "language-country-adSize"
+        private readonly ConcurrentDictionary<string, Ad> _randomizedAdCache = new();
 
         public AdService(IAdRepository repository, ILogger logger)
         {
@@ -25,28 +29,24 @@ namespace Application.Services
         /// <inheritdoc/>
         public Ad GetAd(string language, string country, string adSize)
         {
-            var ads = _repository.GetAdsByFilter(language, country, adSize).ToList();
-            if (!ads.Any())
-            {
-                throw new Exception("No ads available for the specified parameters.");
-            }
+            var cacheKey = GetCacheKey(language, country, adSize);
+            Ad? selectedAd = null;
 
-            Ad selectedAd;
-            // Randomly choose: 50% chance for the optimized ad, 50% for a random ad.
+            // 50% Chance to get optimized ad from optimized ad cache.
             if (_random.NextDouble() < 0.5)
             {
-                var cacheKey = GetCacheKey(language, country, adSize);
-                if (!_optimizedAdCache.TryGetValue(cacheKey, out var optimizedAd) || optimizedAd == null)
-                {
-                    optimizedAd = CalculateOptimizedAd(ads);
-                    _optimizedAdCache[cacheKey] = optimizedAd;
-                }
-                selectedAd = optimizedAd;
+                _logger.Information("Optimized Ad Selected!");
+                _optimizedAdCache.TryGetValue(cacheKey, out selectedAd);
             }
+            // 50% Chance to get randomized ad from optimized ad cache.
             else
             {
-                selectedAd = ads[_random.Next(ads.Count)];
+                _logger.Information("Random Ad Selected!");
+                _randomizedAdCache.TryGetValue(cacheKey, out selectedAd);
             }
+
+            if (selectedAd == null)
+                throw new Exception("Cached ad not found. Make sure background job is updating the cache.");
 
             _repository.IncrementImpression(selectedAd.AdId);
             _logger.Information("GetAd: Returned ad {AdId} (Title: {Title})", selectedAd.AdId, selectedAd.Title);
@@ -65,6 +65,23 @@ namespace Application.Services
         {
             _repository.IncrementRegistration(adId);
             _logger.Information("RegisterAd: Recorded registration for ad {AdId}", adId);
+        }
+
+        public void UpdateOptimizedAndRandomAd(string lang, string country, string size)
+        {
+            var cacheKey = GetCacheKey(lang, country, size);
+            var ads = _repository.GetAdsByFilter(lang, country, size).ToList();
+
+            if (!ads.Any()) return;
+
+            var optimizedAd = CalculateOptimizedAd(ads);
+            var randomizedAd = ads[_random.Next(ads.Count)];
+
+            _optimizedAdCache[cacheKey] = optimizedAd;
+            _randomizedAdCache[cacheKey] = randomizedAd;
+
+            _logger.Warning("Updated caches for key {CacheKey}: OptimizedAd={OptimizedId}, RandomAd={RandomId}",
+                cacheKey, optimizedAd.AdId, randomizedAd.AdId);
         }
 
         private string GetCacheKey(string language, string country, string adSize) =>

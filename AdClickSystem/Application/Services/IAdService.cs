@@ -24,5 +24,7 @@ namespace Application.Services
         /// Records a registration against a specified ad.
         /// </summary>
         void RegisterAd(Guid adId);
+
+        void UpdateOptimizedAndRandomAd(string lang, string country, string size);
     }
 }

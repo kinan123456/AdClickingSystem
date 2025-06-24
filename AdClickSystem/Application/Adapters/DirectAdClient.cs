@@ -23,22 +23,18 @@ namespace Application.Adapters
         public async Task ClickAdAsync(Guid adId)
         {
             _adService.ClickAd(adId);
-            _logger.Information("DirectAdClient: ClickAdAsync recorded click for ad {AdId}", adId);
             await Task.CompletedTask;
         }
 
         public async Task<Ad> GetAdAsync(string language, string country, string adSize)
         {
             var ad = _adService.GetAd(language, country, adSize);
-            _logger.Information("DirectAdClient: GetAdAsync returned ad {AdId} for {Language}-{Country}-{AdSize}",
-                ad.AdId, language, country, adSize);
             return await Task.FromResult(ad);
         }
 
         public async Task RegisterAdAsync(Guid adId)
         {
             _adService.RegisterAd(adId);
-            _logger.Information("DirectAdClient: RegisterAdAsync recorded registration for ad {AdId}", adId);
             await Task.CompletedTask;
         }
     }

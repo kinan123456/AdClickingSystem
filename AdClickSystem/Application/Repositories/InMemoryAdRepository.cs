@@ -1,4 +1,5 @@
-﻿using Domain.Entities.AdClickSystem.Domain.Entities;
+﻿using Domain.Entities;
+using Domain.Entities.AdClickSystem.Domain.Entities;
 using Domain.Interfaces;
 using System;
 using System.Collections.Concurrent;
@@ -21,31 +22,28 @@ namespace Application.Repositories
 
         private void FillInAdsDatabase()
         {
-            // Seed with some sample ads.
-            var sampleAds = new List<Ad>
-            {
-                new Ad {
-                    AdId = Guid.NewGuid(),
-                    Title = "Ad One",
-                    Description = "Buy our first product",
-                    MediaUrl = "first",
-                    Language = "HE",
-                    Country = "ISRAEL",
-                    AdSize = "M"
-                },
-                new Ad {
-                    AdId = Guid.NewGuid(),
-                    Title = "Ad Two",
-                    Description = "Buy our second product",
-                    MediaUrl = "second",
-                    Language = "HE",
-                    Country = "ISRAEL",
-                    AdSize = "M"
-                },
-            };
+            var titles = new[] { "Ad A", "Ad B", "Ad C", "Ad D", "Ad E", "Ad F" };
+            var descriptions = new[] { "Buy", "Sale", "Now", "Deal", "Hot", "New" };
+            var mediaUrls = new[] { "url1", "url2", "url3" };
 
-            foreach (var ad in sampleAds)
+            var rand = new Random();
+            string language = "HE";
+            string country = "ISRAEL";
+            string adSize = "M";
+
+            for (int i = 0; i < 30; i++)
             {
+                var ad = new Ad
+                {
+                    AdId = Guid.NewGuid(),
+                    Title = titles[rand.Next(titles.Length)],
+                    Description = descriptions[rand.Next(descriptions.Length)],
+                    MediaUrl = mediaUrls[rand.Next(mediaUrls.Length)],
+                    Language = language,
+                    Country = country,
+                    AdSize = adSize
+                };
+
                 _ads.TryAdd(ad.AdId, ad);
             }
         }
