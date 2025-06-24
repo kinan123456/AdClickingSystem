@@ -51,9 +51,6 @@ namespace Application.Repositories
         }
 
         /// <inheritdoc/>
-        public IEnumerable<Ad> GetAllAds() => _ads.Values;
-
-        /// <inheritdoc/>
         public IEnumerable<Ad> GetAdsByFilter(string language, string country, string adSize)
         {
             return _ads.Values.Where(ad =>

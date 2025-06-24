@@ -8,11 +8,6 @@ namespace Domain.Interfaces
     public interface IAdRepository
     {
         /// <summary>
-        /// Gets all ads.
-        /// </summary>
-        IEnumerable<Ad> GetAllAds();
-
-        /// <summary>
         /// Gets all ads matching the specified filter.
         /// </summary>
         IEnumerable<Ad> GetAdsByFilter(string language, string country, string adSize);
