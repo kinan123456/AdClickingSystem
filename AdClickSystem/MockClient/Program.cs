@@ -1,4 +1,5 @@
-﻿using Serilog;
+﻿using Application.Adapters;
+using Serilog;
 
 internal class Program
 {
@@ -14,24 +15,31 @@ internal class Program
             .CreateLogger();
         Log.Information("MockClient started using DirectAdClient adapter.");
 
+        IAdClient client = new DirectAdClient();
+
+        string lang = "HE";
+        string country = "ISRAEL";
+        string size = "M";
+
         while (true)
         {
             try
             {
                 // Get an ad using the adapter.
                 Log.Information("MockClient: GetAdAsync returned AdId: {AdId}, Title: {Title}", 5, 5);
+                await client.GetAdAsync(lang, country, size);
 
                 // Simulate a click with 50% chance.
                 if (RandomGenerator.NextDouble() < 0.5)
                 {
+                    // Simulate a registration with 30% chance.
+                    if (RandomGenerator.NextDouble() < 0.3)
+                    {
+                        Log.Information("MockClient: RegisterAdAsync executed for AdId: {AdId}", 5);
+                    }
                     Log.Information("MockClient: ClickAdAsync executed for AdId: {AdId}", 5);
                 }
 
-                // Simulate a registration with 30% chance.
-                if (RandomGenerator.NextDouble() < 0.3)
-                {
-                    Log.Information("MockClient: RegisterAdAsync executed for AdId: {AdId}", 5);
-                }
             }
             catch (Exception ex)
             {
@@ -39,7 +47,7 @@ internal class Program
             }
 
             // Wait for a random interval between 2 and 5 seconds.
-            int delayMilliseconds = RandomGenerator.Next(2000, 5000);
+            var delayMilliseconds = 10;
             await Task.Delay(delayMilliseconds);
         }
     }
